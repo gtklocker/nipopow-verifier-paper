@@ -1,0 +1,146 @@
+    /* "iszero.sol":25:723  contract testComp {... */
+  mstore(0x40, 0x80)
+  callvalue
+    /* "--CODEGEN--":5:14   */
+  dup1
+    /* "--CODEGEN--":2:4   */
+  iszero
+  tag_1
+  jumpi
+    /* "--CODEGEN--":27:28   */
+  0x00
+    /* "--CODEGEN--":24:25   */
+  dup1
+    /* "--CODEGEN--":17:29   */
+  revert
+    /* "--CODEGEN--":2:4   */
+tag_1:
+    /* "iszero.sol":25:723  contract testComp {... */
+  pop
+  dataSize(sub_0)
+  dup1
+  dataOffset(sub_0)
+  0x00
+  codecopy
+  0x00
+  return
+stop
+
+sub_0: assembly {
+        /* "iszero.sol":25:723  contract testComp {... */
+      mstore(0x40, 0x80)
+      callvalue
+        /* "--CODEGEN--":5:14   */
+      dup1
+        /* "--CODEGEN--":2:4   */
+      iszero
+      tag_1
+      jumpi
+        /* "--CODEGEN--":27:28   */
+      0x00
+        /* "--CODEGEN--":24:25   */
+      dup1
+        /* "--CODEGEN--":17:29   */
+      revert
+        /* "--CODEGEN--":2:4   */
+    tag_1:
+        /* "iszero.sol":25:723  contract testComp {... */
+      pop
+      jumpi(tag_2, lt(calldatasize, 0x04))
+      shr(0xe0, calldataload(0x00))
+      dup1
+      0x798d1980
+      eq
+      tag_3
+      jumpi
+    tag_2:
+        /* "--CODEGEN--":12:13   */
+      0x00
+        /* "--CODEGEN--":9:10   */
+      dup1
+        /* "--CODEGEN--":2:14   */
+      revert
+        /* "iszero.sol":224:376  function compWithB1(uint256 input) public pure returns(bool){... */
+    tag_3:
+      tag_4
+      0x04
+      dup1
+      calldatasize
+      sub
+        /* "--CODEGEN--":15:17   */
+      0x20
+        /* "--CODEGEN--":10:13   */
+      dup2
+        /* "--CODEGEN--":7:18   */
+      lt
+        /* "--CODEGEN--":4:6   */
+      iszero
+      tag_5
+      jumpi
+        /* "--CODEGEN--":31:32   */
+      0x00
+        /* "--CODEGEN--":28:29   */
+      dup1
+        /* "--CODEGEN--":21:33   */
+      revert
+        /* "--CODEGEN--":4:6   */
+    tag_5:
+      pop
+        /* "iszero.sol":224:376  function compWithB1(uint256 input) public pure returns(bool){... */
+      calldataload
+      tag_6
+      jump	// in
+    tag_4:
+      0x40
+      dup1
+      mload
+      swap2
+      iszero
+      iszero
+      dup3
+      mstore
+      mload
+      swap1
+      dup2
+      swap1
+      sub
+      0x20
+      add
+      swap1
+      return
+    tag_6:
+        /* "iszero.sol":279:283  bool */
+      0x00
+        /* "iszero.sol":298:303  input */
+      dup2
+        /* "iszero.sol":304:305  1 */
+      0x01
+        /* "iszero.sol":298:305  input&1 */
+      and
+        /* "iszero.sol":309:310  1 */
+      0x01
+        /* "iszero.sol":298:310  input&1 == 1 */
+      eq
+        /* "iszero.sol":294:348  if (input&1 == 1) {... */
+      iszero
+      tag_8
+      jumpi
+      pop
+        /* "iszero.sol":333:337  true */
+      0x01
+        /* "iszero.sol":326:337  return true */
+      jump(tag_7)
+        /* "iszero.sol":294:348  if (input&1 == 1) {... */
+    tag_8:
+      pop
+        /* "iszero.sol":364:369  false */
+      0x00
+        /* "iszero.sol":224:376  function compWithB1(uint256 input) public pure returns(bool){... */
+    tag_7:
+      swap2
+      swap1
+      pop
+      jump	// out
+
+    auxdata: 0xa2646970667358221220f8b3029ac2042b74d7be49a0a48ee88ff43e024e45adf4b8eee5d39af7fe24d064736f6c63430006040033
+}
