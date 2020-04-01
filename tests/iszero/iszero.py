@@ -61,15 +61,15 @@ def call(interface, function_name, function_args=[]):
 interface = deploy()
 
 result = call(interface, "compWithB0", function_args=[10])
-print(result['gas'], result['result'])
+print(result["gas"], result["result"])
 
 result = call(interface, "compWithB1", function_args=[10])
-print(result['gas'], result['result'])
+print(result["gas"], result["result"])
 
 result = call(interface, "compWith0", function_args=[10])
-print(result['gas'], result['result'])
+print(result["gas"], result["result"])
 
 result = call(interface, "compWith1", function_args=[10])
-print(result['gas'], result['result'])
+print(result["gas"], result["result"])
 
 finalize(interface)
