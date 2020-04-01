@@ -1,9 +1,13 @@
 pragma solidity ^0.6.0;
 
+
 contract testComp {
-    function compWith0(uint256 input) public pure returns(bool){
-        if (!(input%2 == 0)) {
-            return true;
+    function compWithB0(uint256 input) public pure returns (bool) {
+        bool f = false;
+        for (uint256 i = 0; i < 1000; i++) {
+            if (!(input & 1 == 0)) {
+                f = true;
+            }
         }
         return false;
     }

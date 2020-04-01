@@ -17,7 +17,7 @@ from config import profiler
 def deploy(constructor_arguments=[]):
     contract_path = "./iszero.sol"
     interface = contract_interface.ContractInterface(
-        contract_path, backend="geth", constructor_arguments=constructor_arguments
+        contract_path, backend="ganache", constructor_arguments=constructor_arguments
     )
     return interface
 
@@ -60,7 +60,16 @@ def call(interface, function_name, function_args=[]):
 
 interface = deploy()
 
-result = call(interface, "func", function_args=[10])
-print(result['gas'])
+result = call(interface, "compWithB0", function_args=[10])
+print(result['gas'], result['result'])
+
+result = call(interface, "compWithB1", function_args=[10])
+print(result['gas'], result['result'])
+
+result = call(interface, "compWith0", function_args=[10])
+print(result['gas'], result['result'])
+
+result = call(interface, "compWith1", function_args=[10])
+print(result['gas'], result['result'])
 
 finalize(interface)
