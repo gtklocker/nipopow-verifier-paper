@@ -1,10 +1,12 @@
 pragma solidity ^0.6.2;
 
+import "./lib/Merkle.sol";
 
-//import "strings.sol";
 
 contract Crosschain {
-    constructor(bytes32 genesis, uint _m, uint _k) public {
+    using Merkle for bytes32[];
+
+    constructor(bytes32 genesis, uint256 _m, uint256 _k) public {
         genesisBlockHash = genesis;
         m = _m;
         k = _k;
@@ -21,8 +23,9 @@ contract Crosschain {
         address payable author;
         uint256 expire;
         bytes32 proofHash;
-        bytes32 hashedProofHash;
+        bytes32 proofMerkleTreeRoot;
         bytes32 siblingsHash;
+        uint256 proofSize;
     }
 
     // the block header hash.
@@ -106,16 +109,13 @@ contract Crosschain {
     // TODO: lca can be very close to the tip of submited proof so that
     // score(existing[lca:]) < score(contesting[lca:]) because
     // |existing[:lca]| < m
-    function bestArg(bytes32[] memory proof, uint256 lca)
-        internal
-        returns (uint256)
-    {
+    function bestArg(bytes32[] memory proof) internal returns (uint256) {
         uint256 maxLevel = 0;
         uint256 maxScore = 0;
         uint256 curLevel = 0;
 
         // Count the frequency of the levels.
-        for (uint256 i = 0; i < lca; i++) {
+        for (uint256 i = 0; i < proof.length; i++) {
             curLevel = getLevel(proof[i]);
 
             // Superblocks of level m are also superblocks of level m - 1.
@@ -183,10 +183,11 @@ contract Crosschain {
         return uint8(bytes1(b << 248));
     }
 
-    function findSiblingsOffset(
-        bytes32[4][] memory headers,
-        uint256 proofIndex
-    ) internal pure returns (uint256) {
+    function findSiblingsOffset(bytes32[4][] memory headers, uint256 proofIndex)
+        internal
+        pure
+        returns (uint256)
+    {
         uint256 ptr;
 
         for (uint256 i = 1; i < proofIndex; i++) {
@@ -206,10 +207,7 @@ contract Crosschain {
         bytes32[] memory siblings,
         uint256 validateIndex
     ) internal pure returns (bool) {
-        uint256 siblingsOffset = findSiblingsOffset(
-            headers,
-            validateIndex
-        );
+        uint256 siblingsOffset = findSiblingsOffset(headers, validateIndex);
 
         uint8 branchLength = b32ToUint8(
             (headers[validateIndex][3] >> 8) & bytes32(uint256(0xff))
@@ -253,7 +251,6 @@ contract Crosschain {
             for (uint8 j = 0; j < branchLength; j++)
                 reversedSiblings[j] = siblings[ptr + j];
             ptr += branchLength;
-
 
             // Verify the merkle tree proof
             if (
@@ -300,10 +297,10 @@ contract Crosschain {
             hashedHeaders[i] = hashHeader(headers[i]);
         }
 
+        events[hashedBlock].proofSize = hashedHeaders.length;
+        events[hashedBlock].proofMerkleTreeRoot = hashedHeaders
+            .merkleTreeHash();
         events[hashedBlock].proofHash = sha256(abi.encodePacked(headers));
-        events[hashedBlock].hashedProofHash = sha256(
-            abi.encodePacked(hashedHeaders)
-        );
         events[hashedBlock].siblingsHash = sha256(abi.encodePacked(siblings));
         events[hashedBlock].expire = block.number + k;
         events[hashedBlock].author = msg.sender;
@@ -334,11 +331,10 @@ contract Crosschain {
     // Check if all blocks of existing[lca+1:] are different from contesting[1:]
     function disjointProofs(
         bytes32[] memory existing,
-        bytes32[] memory contesting,
-        uint256 lca
+        bytes32[] memory contesting
     ) internal pure returns (bool) {
-        for (uint256 i = lca + 1; i < existing.length; i++) {
-            for (uint256 j = 1; j < contesting.length; j++) {
+        for (uint256 i = 0; i < existing.length - 1; i++) {
+            for (uint256 j = 0; j < contesting.length - 1; j++) {
                 if (existing[i] == contesting[j]) {
                     return false;
                 }
@@ -387,42 +383,31 @@ contract Crosschain {
     }
 
     function submitContestingProof(
-        bytes32[] memory existingHeadersHashed,
-        uint256 lca,
+        bytes32[] memory existingHeadersHashedPrefix,
+        bytes32[] memory consistencyProof,
         bytes32[4][] memory contestingHeaders,
         bytes32[] memory contestingSiblings,
         uint256 bestLevel,
-        uint256 blockOfInterestIndex
+        bytes32 blockOfInterestHash
     ) public returns (bool) {
         require(
-            existingHeadersHashed.length > blockOfInterestIndex &&
-                blockOfInterestIndex >= 0,
-            "Block of interest index is out of range"
+            existingHeadersHashedPrefix.length >= m,
+            "Security parameter m violated"
         );
-
-        require(
-            existingHeadersHashed.length >= m, "Security parameter m violated"
-        );
-
-            bytes32 blockOfInterestHash
-         = existingHeadersHashed[blockOfInterestIndex];
 
         require(
             events[blockOfInterestHash].expire > block.number,
             "Contesting period has expired"
         );
 
-        require(existingHeadersHashed.length > lca, "Lca out of range");
-
         require(
-            lca > blockOfInterestIndex,
-            "Block of interest exists in sub-chain"
-        );
-
-        require(
-            events[blockOfInterestHash].hashedProofHash ==
-                sha256(abi.encodePacked(existingHeadersHashed)),
-            "Wrong existing proof"
+            consistencyProof.verifyConsistencyProof(
+                existingHeadersHashedPrefix.merkleTreeHash(),
+                existingHeadersHashedPrefix.length,
+                events[blockOfInterestHash].proofMerkleTreeRoot,
+                events[blockOfInterestHash].proofSize
+            ),
+            "Wrong existing proof prefix"
         );
 
         bytes32[] memory contestingHeadersHashed = new bytes32[](
@@ -442,18 +427,21 @@ contract Crosschain {
         );
 
         require(
-            existingHeadersHashed[lca] ==
-                contestingHeadersHashed[contestingHeaders.length - 1],
+            existingHeadersHashedPrefix[existingHeadersHashedPrefix.length -
+                1] == contestingHeadersHashed[contestingHeaders.length - 1],
             "Wrong lca"
         );
 
         require(
-            disjointProofs(existingHeadersHashed, contestingHeadersHashed, lca),
-            "Contesting proof[1:] is not different from existing[lca+1:]"
+            disjointProofs(
+                existingHeadersHashedPrefix,
+                contestingHeadersHashed
+            ),
+            "Contesting proof[1:] is not different from existing[1:]"
         );
 
         require(
-            bestArg(existingHeadersHashed, lca) <
+            bestArg(existingHeadersHashedPrefix) <
                 argAtLevel(contestingHeadersHashed, bestLevel),
             "Existing proof has greater score"
         );
