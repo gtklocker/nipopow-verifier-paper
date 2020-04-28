@@ -10,7 +10,7 @@ sys.path.append("../tools/interface/")
 import contract_interface
 
 
-def make_interface(backend):
+def make_interface(backend, contract):
     """
     Creates a contract interface
     """
@@ -18,6 +18,7 @@ def make_interface(backend):
         {"path": contract_path, "ctor": [genesis, m, k]},
         backend=backend,
         profiler=profiler,
+        deployed_contract=contract
     )
 
 
@@ -27,7 +28,7 @@ def submit_event_proof(
     proof,
     block_of_interest_index,
     collateral=collateral,
-    from_address=None,
+    from_address=None
 ):
     """
     Call submit_event_proof of the verifier
@@ -37,7 +38,7 @@ def submit_event_proof(
         "submitEventProof",
         function_args=[proof.headers, proof.siblings, block_of_interest_index],
         value=collateral,
-        from_address=from_address,
+        from_address=from_address
     )
 
 

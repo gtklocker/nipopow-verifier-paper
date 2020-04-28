@@ -21,7 +21,8 @@ class ContractInterface:
             backend='ganache',
             genesis_overrides={'gas_limit':3141592000},
             precompiled_contract=None,
-            profiler=None
+            profiler=None,
+            deployed_contract=None
             ):
 
         self.solc_version=solc_version
@@ -37,6 +38,16 @@ class ContractInterface:
 
         self.w3 = Web3()
         self.init_backend()
+
+        self.profiler = profiler
+
+        if deployed_contract is not None:
+            address = deployed_contract["address"]
+            abi = deployed_contract["abi"]
+            deployed_contract = self.w3.eth.contract(address=address, abi=abi)
+            self.contract_instances.append(deployed_contract)
+            return
+
         self.setup_compiler()
 
         self.libraries = {}
@@ -50,8 +61,6 @@ class ContractInterface:
         else:
             compiled_contract = self.compile(path)
         self.contract_instances = self.deploy(compiled_contract, contract["ctor"])
-
-        self.profiler = profiler
 
     def create_from_compiled(self, contract_path, precompiled_contract):
         return [[ contract_path,
@@ -252,14 +261,15 @@ class ContractInterface:
         from datetime import datetime
         return datetime.today().isoformat().split('.')[0]
 
-    def call(self, function_name, function_args=[], event_name='debug', value=0, from_address=None):
+    def call(self, function_name, function_args=[], event_name='debug', value=0, from_address=None, contract=None):
         """
         Runs the output, gas used and events emitted for a function
         """
         if from_address is None:
             from_address = self.w3.eth.accounts[0]
 
-        contract = self.get_contract()
+        if contract is None:
+            contract = self.get_contract()
         function = contract.get_function_by_name(function_name)(*function_args)
         res = function.call({"from": from_address, "value": value})
         tx_hash = function.transact({"from": from_address, "value": value})
